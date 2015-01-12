@@ -132,47 +132,43 @@ public class Constraint {
                         if let value: AnyObject = fragmentProperties[constraintKey] {
                             if let propertyInfo = propertyInfos[constraintKey] {
                                 // Check value matches constraint
-                                if let hasNewValueConstraintValue = constraintValue as? HasNewValuePropertyConstraint {
-                                    // Apply a simple check to make sure this change has a new model value
-                                    let fragmentModelValue = convertAnyObjectToModelValue(value, propertyInfo.valueType)
-                                    if value !== NSNull() && fragmentModelValue == nil {
-                                        return false
-                                    }
-                                } else if let arrayConstraintValue = constraintValue as? ArrayPropertyConstraint {
-                                    // Apply an array constraint value
-                                    if let array = value as? [AnyObject] {
-                                        switch type {
-                                        case .Add:
-                                            if arrayConstraintValue.type != .Insert || array.count < 1 {
-                                                // Allow an insert constraint on an add with actual values in the 
-                                                // array but not a remove or anything else as they do not make sense
-                                                return false
-                                            }
-                                        case .Change:
-                                            if let originalArray = syncFragment.originalProperties?[constraintKey] as? [AnyObject] {
-                                                if arrayConstraintValue.type == .Insert && !(array.count > originalArray.count) {
-                                                    return false
-                                                } else if arrayConstraintValue.type == .Remove && !(array.count < originalArray.count) {
+                                if constraintValue as? HasNewValuePropertyConstraint == nil {
+                                    if let arrayConstraintValue = constraintValue as? ArrayPropertyConstraint {
+                                        // Apply an array constraint value
+                                        if let array = value as? [AnyObject] {
+                                            switch type {
+                                            case .Add:
+                                                if arrayConstraintValue.type != .Insert || array.count < 1 {
+                                                    // Allow an insert constraint on an add with actual values in the
+                                                    // array but not a remove or anything else as they do not make sense
                                                     return false
                                                 }
-                                            } else {
-                                                return false
+                                            case .Change:
+                                                if let originalArray = syncFragment.originalProperties?[constraintKey] as? [AnyObject] {
+                                                    if arrayConstraintValue.type == .Insert && !(array.count > originalArray.count) {
+                                                        return false
+                                                    } else if arrayConstraintValue.type == .Remove && !(array.count < originalArray.count) {
+                                                        return false
+                                                    }
+                                                } else {
+                                                    return false
+                                                }
                                             }
+                                        } else {
+                                            return false
                                         }
                                     } else {
-                                        return false
-                                    }
-                                } else {
-                                    // Apply a simple value constraint
-                                    if constraintValue === NSNull() && value === NSNull() {
-                                        // Allow case where constraint is nil and explicit nil matches
-                                    } else {
-                                        let constraintModelValue = convertAnyObjectToModelValue(constraintValue, propertyInfo.valueType)
-                                        let fragmentModelValue = convertAnyObjectToModelValue(value, propertyInfo.valueType)
-                                        if constraintModelValue == nil || fragmentModelValue == nil {
-                                            return false
-                                        } else if !constraintModelValue!.equalTo(fragmentModelValue!) {
-                                            return false
+                                        // Apply a simple value constraint
+                                        if constraintValue === NSNull() && value === NSNull() {
+                                            // Allow case where constraint is nil and explicit nil matches
+                                        } else {
+                                            let constraintModelValue = convertAnyObjectToModelValue(constraintValue, propertyInfo.valueType)
+                                            let fragmentModelValue = convertAnyObjectToModelValue(value, propertyInfo.valueType)
+                                            if constraintModelValue == nil || fragmentModelValue == nil {
+                                                return false
+                                            } else if !constraintModelValue!.equalTo(fragmentModelValue!) {
+                                                return false
+                                            }
                                         }
                                     }
                                 }
